@@ -1,14 +1,21 @@
 {
   "name": "obrema",
-  "version": "0.0.1",
+  "version": "0.0.1-beta",
   "description": "ORM for JS",
   "main": "dist/main.js",
   "scripts": {
     "test": "npx karma start --single-run",
     "build": "npx webpack --mode production",
     "lint": "npx eslint src",
-    "lint-fix": "npx eslint src --fix"
+    "lint-fix": "npx eslint src --fix",
+    "prepack": "npm run build"
   },
+  "files": [
+    "dist/*",
+    "dist/**/*",
+    "src/*",
+    "src/**/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/and3k5/obrema.js.git"
