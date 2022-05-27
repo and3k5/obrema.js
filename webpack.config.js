@@ -54,6 +54,7 @@ module.exports = function (env, config) {
         },
         output: {
             library: "main",
+            filename: "index.js",
         },
         resolve: {
             fallback: {

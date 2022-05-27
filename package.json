@@ -2,7 +2,7 @@
   "name": "obrema",
   "version": "0.0.3-beta",
   "description": "ORM for JS",
-  "main": "dist/main.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "npx karma start --single-run",
     "build": "npx webpack --mode production",
