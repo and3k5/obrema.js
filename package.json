@@ -4,7 +4,7 @@
   "description": "ORM for JS",
   "main": "dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx karma start --single-run",
     "build": "npx webpack --mode production",
     "lint": "npx eslint src",
     "lint-fix": "npx eslint src --fix"
@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/and3k5/obrema.js#readme",
   "dependencies": {
+    "esprima": "^4.0.1",
     "lazy-var": "^2.1.0",
     "sql.js": "^1.6.2"
   },
