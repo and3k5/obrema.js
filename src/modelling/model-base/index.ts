@@ -36,35 +36,7 @@ export class ModelBase {
     }
 
     static setupRelation(instance: any, relation: any) {
-        const relationData = new RelationData();
-        relationData.fetched = false;
-        relationData.relation = relation;
-        relationData.value = undefined;
-        relationData.returnsNew = false;
-        relationData.fetcher = (function (relation) {
-            if (relation.type === "one-to-one") {
-                return function ({ instance, relation } : { instance: any, relation: any}) {
-                    const req: any = {};
-                    req[relation.fkField] = instance[relation.pkField];
-                    if (instance.dataContext == null)
-                        throw new Error("cannot fetch relation: no dataContext");
-                    return relation.fkModel.fetch(instance.dataContext, req);
-                }
-
-            }else {
-                throw new Error("TODO implement fetcher for relation type: "+relation.type);
-            }
-        })(relation);
-        relationData.setter = (function (relation) {
-            if (relation.type === "one-to-one") {
-                return function ({ instance, value, relation } : {instance: any, value: any, relation: any}) {
-                    value[relation.fkField] = instance[relation.pkField];
-                    return value;
-                }
-            }else {
-                throw new Error("TODO implement setter for relation type: "+relation.type);
-            }
-        })(relation);
+        const relationData = new RelationData(relation);
 
         Object.defineProperty(instance, relation.navigator, {
             get() {
@@ -132,7 +104,7 @@ export class ModelBase {
 export class ModelMetaData {
     fields : Array<any>;
     tableName : string;
-    relations : Array<any>;
+    relations : Array<any> | undefined;
     constructor({fields, tableName, relations} : {fields: Array<any>, tableName: string, relations?: Array<any>}) {
         this.fields = fields;
         this.tableName = tableName;

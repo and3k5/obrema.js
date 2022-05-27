@@ -60,8 +60,8 @@ module.exports = function (env, config) {
                 fs: false,
                 path: false,
                 util: false,
-                crypto: "crypto-browserify",
-                stream: "stream-browserify",
+                crypto: require.resolve("crypto-browserify"),
+                stream: require.resolve("stream-browserify"),
                 //xyz: path.resolve(__dirname, 'path/to/file.js'), // include a polyfill for xyz
             },
             extensions: ['.tsx', '.ts', '.js'],

@@ -16,6 +16,7 @@ import { MigrationField } from '../../../database/migration/field';
 import { ModelBase, ModelMetaData } from '../../../modelling/model-base';
 import { LanguageEngineBase } from '../../language-engine';
 import { DataContextBase } from '../data-context-base';
+import { Relation } from "../../../database/migration/relation";
 
 lazyInit.get();
 
@@ -133,7 +134,7 @@ export class DataContext extends DataContextBase {
         }
     }
 
-    createTable(tableName : string, fields : Array<MigrationField>, relations : any) {
+    createTable(tableName : string, fields : Array<MigrationField>, relations : Relation[] | undefined) {
         const sql = this.languageEngine.WriteCreateTable(tableName, fields, relations);
         this.db.run(sql);
     }

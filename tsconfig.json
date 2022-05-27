@@ -2,16 +2,27 @@
     "compilerOptions": {
         "outDir": "./dist/",
         "noImplicitAny": true,
-        "module": "es6",
-        "target": "es5",
+        "module": "ES2020",
+        "target": "ES2020",
         "jsx": "react",
-        "allowJs": true,
+        "allowJs": false,
+        "checkJs": false,
         "moduleResolution": "node",
         "downlevelIteration": true,
         "paths": {
             "@module": [
                 "./node_modules"
             ]
-        }
+        },
+        "lib": [
+            "ES2020", "DOM"
+        ],
+        "esModuleInterop": true,
+        "strict": true,
+        "noImplicitReturns": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "declaration": true,
+        "declarationDir": "dist",
     }
 }

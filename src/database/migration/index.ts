@@ -29,8 +29,8 @@ export abstract class MigrationOperation {
 export class TableCreation extends MigrationOperation {
     tableName: string;
     fields: MigrationField[];
-    relations: Relation[];
-    constructor(tableName : string, fields : Array<MigrationField>, relations: Array<Relation>) {
+    relations: Relation[] | undefined;
+    constructor(tableName : string, fields : Array<MigrationField>, relations: Array<Relation> | undefined) {
         super();
         this.tableName = tableName;
         this.fields = fields;

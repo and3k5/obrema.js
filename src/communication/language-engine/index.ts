@@ -1,11 +1,12 @@
 import { MigrationField as MigrationField } from "../../database/migration/field";
+import { Relation } from "../../database/migration/relation";
 
 export abstract class LanguageEngineBase {
-    abstract WriteCreateTable(tableName: string, fields: MigrationField[], relations: any) : string;
+    abstract WriteCreateTable(tableName: string, fields: MigrationField[], relations: Relation[] | undefined) : string;
 }
 
 export class SqliteLanguageEngine extends LanguageEngineBase {
-    WriteCreateTable(tableName: string, fields: MigrationField[], relations: any): string {
+    WriteCreateTable(tableName: string, fields: MigrationField[], relations: Relation[] | undefined): string {
         const fieldLines = fields.map(x => this.WriteMigrationField(x));
 
         if (relations != null) {
