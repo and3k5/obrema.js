@@ -1,5 +1,5 @@
 import { DataContext } from "../../communication/data-context";
-import { Field } from "./field";
+import { MigrationField } from "./field";
 import { Relation } from "./relation";
 
 export class Migration {
@@ -10,7 +10,7 @@ export class Migration {
         this.operations = [];
     }
 
-    createTable(tableName: string, fields: Array<Field>, relations?: Array<Relation>) : Migration {
+    createTable(tableName: string, fields: Array<MigrationField>, relations?: Array<Relation>) : Migration {
         this.operations.push(new TableCreation(tableName, fields, relations));
         return this;
     }
@@ -28,9 +28,9 @@ export abstract class MigrationOperation {
 
 export class TableCreation extends MigrationOperation {
     tableName: string;
-    fields: Field[];
+    fields: MigrationField[];
     relations: Relation[];
-    constructor(tableName : string, fields : Array<Field>, relations: Array<Relation>) {
+    constructor(tableName : string, fields : Array<MigrationField>, relations: Array<Relation>) {
         super();
         this.tableName = tableName;
         this.fields = fields;

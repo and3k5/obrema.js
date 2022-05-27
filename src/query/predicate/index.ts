@@ -1,5 +1,5 @@
 import { IParameterWriter, IQueryStringBuilder, Parameter, ParameterProvider } from "../base";
-import { Field } from "../field";
+import { QueryField } from "../field";
 const esprima = require("esprima");
 
 export interface IPredicate extends IQueryStringBuilder, IParameterWriter {
@@ -176,7 +176,7 @@ export function parsePredicateFromFunction(arg: Function, parameterProvider? : P
     return parseLogicExpression(logicExpression, parameterProvider);
 }
 
-function parseExpression(expression: any, parameterProvider : ParameterProvider): IPredicate | Field | Literal {
+function parseExpression(expression: any, parameterProvider : ParameterProvider): IPredicate | QueryField | Literal {
     if (expression.type === "LogicalExpression")
         return parseLogicExpression(expression, parameterProvider);
     if (expression.type === "BinaryExpression")
@@ -242,10 +242,10 @@ function parseBinaryExpression(binaryExpression: any, parameterProvider : Parame
     return new ComparisonPredicate(parseExpression(binaryExpression.left, parameterProvider), comparer, parseExpression(binaryExpression.right, parameterProvider));
 }
 
-function parseMemberExpression(memberExpression: any, parameterProvider : ParameterProvider): Field {
+function parseMemberExpression(memberExpression: any, parameterProvider : ParameterProvider): QueryField {
     if (memberExpression.type !== "MemberExpression")
         throw new Error("Expected MemberExpression but got " + memberExpression.type);
-    return new Field(memberExpression.property.name, "");
+    return new QueryField(memberExpression.property.name, "");
 }
 
 function parseLiteral(literal: any, parameterProvider: ParameterProvider): Literal {

@@ -1,6 +1,6 @@
 import { IQueryStringBuilder } from "../base";
 
-export class Field implements IQueryStringBuilder {
+export class QueryField implements IQueryStringBuilder {
     name: string;
     objectAlias: string;
     constructor(name : string, objectAlias : string) {

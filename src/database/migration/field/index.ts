@@ -1,4 +1,4 @@
-export class Field {
+export class MigrationField {
     type: string;
     name: string;
     primaryKey: boolean;

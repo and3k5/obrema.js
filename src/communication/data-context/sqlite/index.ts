@@ -12,7 +12,7 @@ const lazyInit = lazy(async () => await initSqlJs({
 
 import { SqliteQueryEngine } from "../../../query/engine"
 import { Migration } from '../../../database/migration';
-import { Field } from '../../../database/migration/field';
+import { MigrationField } from '../../../database/migration/field';
 import { ModelBase, ModelMetaData } from '../../../modelling/model-base';
 import { LanguageEngineBase } from '../../language-engine';
 import { DataContextBase } from '../data-context-base';
@@ -133,7 +133,7 @@ export class DataContext extends DataContextBase {
         }
     }
 
-    createTable(tableName : string, fields : Array<Field>, relations : any) {
+    createTable(tableName : string, fields : Array<MigrationField>, relations : any) {
         const sql = this.languageEngine.WriteCreateTable(tableName, fields, relations);
         this.db.run(sql);
     }

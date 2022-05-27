@@ -1,4 +1,4 @@
-import { Field as MigrationField } from "../../database/migration/field";
+import { MigrationField as MigrationField } from "../../database/migration/field";
 
 export abstract class LanguageEngineBase {
     abstract WriteCreateTable(tableName: string, fields: MigrationField[], relations: any) : string;
