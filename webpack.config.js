@@ -3,7 +3,7 @@ const path = require("path");
 module.exports = function (env, config) {
     const mode = config.mode;
 
-    const mainConfig = {
+    const mainConfigBase = {
         mode: mode,
         devtool: mode === "development" ? "source-map" : undefined,
         entry: {
@@ -52,10 +52,6 @@ module.exports = function (env, config) {
                 }
             ]
         },
-        output: {
-            library: "main",
-            filename: "index.js",
-        },
         resolve: {
             fallback: {
                 fs: false,
@@ -69,7 +65,25 @@ module.exports = function (env, config) {
         },
     };
 
-    return [
-        mainConfig,
-    ];
+    var result = [];
+
+    result.push(Object.assign({}, mainConfigBase, {
+        output: {
+            filename: "index.web.js",
+            library: {
+                type: "commonjs2",
+            }
+        }, target: "web",
+    }));
+
+    result.push(Object.assign({}, mainConfigBase, {
+        output: {
+            filename: "index.node.js",
+            library: {
+                type: "commonjs2",
+            }
+        }, target: "node16"
+    }));
+
+    return result;
 }
