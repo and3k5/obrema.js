@@ -73,7 +73,7 @@ module.exports = function (env, config) {
     var result = [];
     result.push(createConfig(env, config, base => Object.assign({}, base, {
         output: {
-            filename: "index.web.js",
+            filename: "index.js",
             library: {
                 type: "commonjs2",
             }
