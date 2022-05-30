@@ -21,6 +21,8 @@ module.exports = {
     },
     ignorePatterns: [
         ".eslintrc.js",
+        "*-test.js",
+        "*-test.ts",
         "src/**/spec.js",
         "src/**/*-spec.js",
         "src/**/spec.ts",

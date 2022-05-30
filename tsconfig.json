@@ -24,5 +24,6 @@
         "emitDecoratorMetadata": true,
         "declaration": true,
         "declarationDir": "dist",
-    }
+    },
+    "exclude": ["*-test.ts"],
 }
