@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 
 process.env.CHROME_BIN = puppeteer.executablePath();
 
-const webpackConfig = require("./webpack.config.js")(undefined, { mode: "development" })[0];
+const webpackConfig = require("./webpack.config.js").createTestConfig();
 
 delete webpackConfig.entry;
 
@@ -24,12 +24,12 @@ module.exports = function (config) {
             { pattern: 'src/**/*-test.ts', watched: false },
         ],
         preprocessors: {
-            'src/*-test.js': ['webpack'],
-            'src/**/*-test.js': ['webpack'],
-            'src/*-test.ts': ['webpack'],
-            'src/**/*-test.ts': ['webpack'],
+            'src/*-test.js': ['webpack', 'sourcemap'],
+            'src/**/*-test.js': ['webpack', 'sourcemap'],
+            'src/*-test.ts': ['webpack', 'sourcemap'],
+            'src/**/*-test.ts': ['webpack', 'sourcemap'],
         },
         webpack: webpackConfig,
-        plugins: ["karma-chrome-launcher", 'karma-webpack', 'karma-mocha', "karma-chai"],
+        plugins: ["karma-chrome-launcher", 'karma-webpack', 'karma-mocha', "karma-chai", "karma-sourcemap-loader"],
     });
 };

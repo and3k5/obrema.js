@@ -1,6 +1,6 @@
 const path = require("path");
 
-module.exports = function (env, config) {
+function createConfig(env, config, modifier) {
     const mode = config.mode;
 
     const mainConfigBase = {
@@ -65,25 +65,64 @@ module.exports = function (env, config) {
         },
     };
 
-    var result = [];
+    return modifier(mainConfigBase);
+}
 
-    result.push(Object.assign({}, mainConfigBase, {
+module.exports = function (env, config) {
+
+    var result = [];
+    result.push(createConfig(env, config, base => Object.assign({}, base, {
         output: {
             filename: "index.web.js",
             library: {
                 type: "commonjs2",
             }
         }, target: "web",
-    }));
-
-    result.push(Object.assign({}, mainConfigBase, {
+    })));
+    result.push(createConfig(env, config, base => Object.assign({}, base, {
         output: {
             filename: "index.node.js",
             library: {
                 type: "commonjs2",
             }
-        }, target: "node16"
-    }));
+        }, target: "node16",
+    })));
 
     return result;
+}
+
+const os = require("os");
+
+module.exports.createTestConfig = function () {
+    return createConfig(undefined, { mode: "development" }, base =>
+        Object.assign({}, base, {
+            devtool: 'inline-source-map',
+            // output: {
+            //     path: path.join(os.tmpdir(), '_karma_webpack_') + Math.floor(Math.random() * 1000000),
+            //     filename: "index.test.js",
+            //     library: {
+            //         type: "module",
+            //     }
+            // },
+            target: "web",
+            stats: {
+                modules: false,
+                colors: true,
+            },
+            watch: false,
+            optimization: {
+                runtimeChunk: 'single',
+                splitChunks: {
+                    chunks: 'all',
+                    minSize: 0,
+                    cacheGroups: {
+                        commons: {
+                            name: 'commons',
+                            chunks: 'initial',
+                            minChunks: 1,
+                        },
+                    },
+                },
+            }
+        }));
 }
