@@ -38,6 +38,8 @@ export class SqliteLanguageEngine extends LanguageEngineBase {
             return "INTEGER";
         case "text":
             return "TEXT";
+        case "decimal":
+            return "NUMERIC";
         }
     }
 
