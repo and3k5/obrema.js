@@ -17,7 +17,7 @@ module.exports = function (config) {
             }
         },
         files: [
-            { pattern: '**/*.js.map', included: false },
+            { pattern: 'dist/**/*.js.map', included: false },
             { pattern: 'src/*-test.js', watched: false },
             { pattern: 'src/**/*-test.js', watched: false },
             { pattern: 'src/*-test.ts', watched: false },
