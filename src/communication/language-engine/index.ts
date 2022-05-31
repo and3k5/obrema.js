@@ -52,7 +52,7 @@ export class SqliteLanguageEngine extends LanguageEngineBase {
             if (field.autoIncrement)
                 continue;
             fields.push({name: field.name, placeholder: "@" + field.name});
-            valueObj["@" + field.name] = model.getFieldValue(field.name);
+            valueObj["@" + field.name] = this.FormatValue(model.getFieldValue(field.name));
         }
 
         const primaryKeys = dataModel.fields.filter((f) => f.primaryKey === true);
