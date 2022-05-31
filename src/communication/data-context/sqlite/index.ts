@@ -16,7 +16,7 @@ getSqlite();
 
 export class DataContext extends DataContextBase {
     //queryEngine: SqliteQueryEngine;
-    db: any;
+    db?: import("sql.js").Database;
     constructor(migrations : Array<Migration> | IterableIterator<Migration>, languageEngine : LanguageEngineBase) {
         super(new SqliteQueryEngine(), migrations, languageEngine);
     }
@@ -48,13 +48,13 @@ export class DataContext extends DataContextBase {
         }
     }
 
-    runMigration(migration : any) {
+    runMigration(migration : Migration) {
         migration.run(this);
         const sql = this.queryEngine.composeInsertInto({ tableName: "Migrations", values: [migration.id]});
         this.queryEngine.exec(this.db, sql);
     }
 
-    hasMigration(migration : any) {
+    hasMigration(migration : Migration) {
         const tblCheckQuery = this.queryEngine.composeSelect({ fields: ["name"], tableName: "sqlite_master", where: [{ field: "type", operator: "=", value: "table"}] });
         const tblCheck = this.queryEngine.exec(this.db, tblCheckQuery);
         if (tblCheck.length === 0)
@@ -68,6 +68,8 @@ export class DataContext extends DataContextBase {
     }
 
     save(model : ModelBase, deep = false) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         const dataModel : ModelMetaData = (model.constructor as any)["getDataModel"]();
 
         if (!model.isNew) {
@@ -129,11 +131,16 @@ export class DataContext extends DataContextBase {
     }
 
     createTable(tableName : string, fields : Array<MigrationField>, relations : Relation[] | undefined) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
+
         const sql = this.languageEngine.WriteCreateTable(tableName, fields, relations);
         this.db.run(sql);
     }
 
     countFromTable(t : ModelMetaData | ModelBase) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         if (t instanceof ModelBase)
             t = (t.constructor as any)["getDataModel"]() as ModelMetaData;
 
@@ -142,24 +149,32 @@ export class DataContext extends DataContextBase {
     }
 
     fetchAllRaw(dataModel : ModelMetaData) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         const data = this.db.exec(`SELECT * FROM ${dataModel.tableName}`);
 
         return data;
     }
 
     listTables() {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         const sql = `SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';`;
         const data = this.db.exec(sql);
         return data;
     }
 
     fetchAllRowsFromTableRaw(tableName : string) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         const data = this.db.exec(`SELECT * FROM ${tableName}`);
 
         return data;
     }
 
     *fetchAll(dataModel : ModelMetaData, type : any) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         const sql = `SELECT 1 as _FOUND_,* FROM ${dataModel.tableName}`;
 
         const stmt = this.db.prepare(sql);
@@ -181,6 +196,8 @@ export class DataContext extends DataContextBase {
     }
 
     fetchFromTable(dataModel : ModelMetaData, req: any, type : any) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         const primaryKeys = dataModel.fields.filter((f: any) => f.primaryKey === true);
 
         const fieldSpecsTxt = primaryKeys.map((x: any) => x.name + "=:" + x.name).join(" AND ");
@@ -229,6 +246,8 @@ export class DataContext extends DataContextBase {
     // }
 
     getRawData() {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         return this.db.export();
     }
 
