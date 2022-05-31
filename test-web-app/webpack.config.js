@@ -1,11 +1,13 @@
 const path = require("path");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-function createConfig(env, config, modifier) {
+module.exports = function (env, config) {
     const mode = config.mode;
 
-    const mainConfigBase = {
+    const webConfig = {
         mode: mode,
         devtool: mode === "development" ? "source-map" : undefined,
+        // context: path.resolve(__dirname, "src", "web"),
         entry: {
             main: "./src/index.ts",
         },
@@ -52,77 +54,29 @@ function createConfig(env, config, modifier) {
                 }
             ]
         },
+        plugins: [new HtmlWebpackPlugin()],
+        output: {
+            library: "main",
+            path: path.resolve(__dirname, 'dist'),
+        },
         resolve: {
             fallback: {
                 fs: false,
                 path: false,
                 util: false,
-                crypto: require.resolve("crypto-browserify"),
-                stream: require.resolve("stream-browserify"),
+                crypto: "crypto-browserify",
+                stream: "stream-browserify",
                 //xyz: path.resolve(__dirname, 'path/to/file.js'), // include a polyfill for xyz
             },
             extensions: ['.tsx', '.ts', '.js'],
         },
+        optimization: {
+            minimize: false,
+            mangleExports: false,
+        }
     };
 
-    return modifier(mainConfigBase);
-}
-
-module.exports = function (env, config) {
-
-    var result = [];
-    result.push(createConfig(env, config, base => Object.assign({}, base, {
-        output: {
-            filename: "index.js",
-            library: {
-                type: "commonjs2",
-            }
-        }, target: "web",
-    })));
-    result.push(createConfig(env, config, base => Object.assign({}, base, {
-        output: {
-            filename: "index.node.js",
-            library: {
-                type: "commonjs2",
-            }
-        }, target: "node16",
-    })));
-
-    return result;
-}
-
-const os = require("os");
-
-module.exports.createTestConfig = function () {
-    return createConfig(undefined, { mode: "development" }, base =>
-        Object.assign({}, base, {
-            devtool: 'inline-source-map',
-            // output: {
-            //     path: path.join(os.tmpdir(), '_karma_webpack_') + Math.floor(Math.random() * 1000000),
-            //     filename: "index.test.js",
-            //     library: {
-            //         type: "module",
-            //     }
-            // },
-            target: "web",
-            stats: {
-                modules: false,
-                colors: true,
-            },
-            watch: false,
-            optimization: {
-                runtimeChunk: 'single',
-                splitChunks: {
-                    chunks: 'all',
-                    minSize: 0,
-                    cacheGroups: {
-                        commons: {
-                            name: 'commons',
-                            chunks: 'initial',
-                            minChunks: 1,
-                        },
-                    },
-                },
-            }
-        }));
+    return [
+        webConfig,
+    ];
 }

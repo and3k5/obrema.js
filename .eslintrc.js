@@ -30,7 +30,10 @@ module.exports = {
         "src/**/test.js",
         "src/**/*-test.js",
         "src/**/test.ts",
-        "src/**/*-test.ts"
+        "src/**/*-test.ts",
+        "dist",
+        "test-web-app",
+        "webpack.config.js"
     ],
     env: {
         browser: true,

@@ -25,5 +25,5 @@
         "declaration": true,
         "declarationDir": "dist",
     },
-    "exclude": ["*-test.ts"],
+    "exclude": ["./test-web-app"],
 }

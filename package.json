@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "npx karma start --single-run",
+    "test-app": "npm run build && cd test-web-app && npm test",
     "build": "npx webpack --mode production",
     "lint": "npx eslint src",
     "lint-fix": "npx eslint src --fix",

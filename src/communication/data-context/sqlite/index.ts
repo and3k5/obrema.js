@@ -1,15 +1,3 @@
-import { default as initSqlJs } from "sql.js";
-import { lazy } from "lazy-var";
-
-const sqlWasm = require("sql.js/dist/sql-wasm.wasm");
-console.log(sqlWasm);
-
-const lazyInit = lazy(async () => await initSqlJs({
-    locateFile: () => {
-        return sqlWasm;
-    }
-}));
-
 import { SqliteQueryEngine } from "../../../query/engine"
 import { Migration } from '../../../database/migration';
 import { MigrationField } from '../../../database/migration/field';
@@ -18,7 +6,13 @@ import { LanguageEngineBase } from '../../language-engine';
 import { DataContextBase } from '../data-context-base';
 import { Relation } from "../../../database/migration/relation";
 
-lazyInit.get();
+import { load as loadWasmFunction } from "./loader";
+
+async function getSqlite() {
+    return await loadWasmFunction();
+}
+
+getSqlite();
 
 export class DataContext extends DataContextBase {
     //queryEngine: SqliteQueryEngine;
@@ -28,7 +22,7 @@ export class DataContext extends DataContextBase {
     }
 
     async loadNew({ disableMigrations = false } = {}) {
-        const SQL = await lazyInit.get();
+        const SQL = await getSqlite();
         this.db = new SQL.Database();
         if (disableMigrations !== true)
             this.runMigrations();
@@ -40,7 +34,7 @@ export class DataContext extends DataContextBase {
         }
         if (!(data instanceof Uint8Array))
             throw new Error("data is not Uint8Array");
-        const SQL = await lazyInit.get();
+        const SQL = await getSqlite();
         this.db = new SQL.Database(data);
         if (disableMigrations !== true)
             this.runMigrations();
