@@ -14,6 +14,12 @@ async function getSqlite() {
 
 getSqlite();
 
+class QueryError extends Error {
+    constructor(message : string, query : string) {
+        super(message+"\n"+query);
+    }
+}
+
 export class DataContext extends DataContextBase {
     //queryEngine: SqliteQueryEngine;
     db?: import("sql.js").Database;
@@ -136,7 +142,16 @@ export class DataContext extends DataContextBase {
             throw new Error("DB is not initialized");
 
         const sql = this.languageEngine.WriteCreateTable(tableName, fields, relations);
-        this.db.run(sql);
+        try {
+            this.db.run(sql);
+
+        }
+        catch (e) {
+            let message = "unknown error";
+            if (e instanceof Error)
+                message = e.message;
+            throw new QueryError(message, sql);
+        }
     }
 
     countFromTable(t : ModelMetaData | ModelBase) {
