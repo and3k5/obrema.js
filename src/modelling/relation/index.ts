@@ -1,14 +1,24 @@
-import { Relation } from "../../database/migration/relation";
+import { ModelBase } from "../model-base";
+
+export type RelationType = "one-to-one";
+
+export interface IRelation {
+    fkField: string;
+    fkModel: typeof ModelBase;
+    pkField: string;
+    type: RelationType;
+    navigator: string;
+}
 
 export class RelationData {
     fetched = false;
-    relation: any;
+    relation: IRelation;
     value: any;
     returnsNew = false;
-    fetcher: (args: { instance: object, relation: Relation }) => object | undefined;
-    setter: (args: { instance: object, value: object, relation: Relation }) => object | undefined;
+    fetcher: (args: { instance: object, relation: IRelation }) => object | undefined;
+    setter: (args: { instance: object, value: object, relation: IRelation }) => object | undefined;
 
-    constructor(relation : any) {
+    constructor(relation : IRelation) {
         this.relation = relation;
         this.fetcher = (function (relation) {
             if (relation.type === "one-to-one") {

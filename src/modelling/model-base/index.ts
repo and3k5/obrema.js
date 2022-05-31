@@ -1,23 +1,24 @@
 import { DataContext } from "../../communication/data-context";
-import { RelationData } from "../relation";
+import { IRelation, RelationData } from "../relation";
+import { IModelMetaField } from "./field";
 
 export class ModelBase {
     isNew: boolean;
-    dataContext: any;
-    relations: Array<any>;
+    dataContext: DataContext;
+    relations: Array<RelationData>;
 
-    constructor(fields = {}, dataContext: any) {
+    constructor(fields = {}, dataContext: DataContext) {
         this.isNew = true;
         if (dataContext == null)
             throw new Error("required: dataContext");
 
         this.dataContext = dataContext;
 
-        const constructor : any = this.constructor;
+        const constructor = this.constructor as typeof ModelBase;
 
-        const dataModel : ModelMetaData = constructor["getDataModel"]();
+        const dataModel : ModelMetaData = constructor.getDataModel();
         for (const field of dataModel.fields) {
-            (this as any)[field.name] = undefined;
+            this.setFieldValue(field.name, undefined);
         }
 
         const relations = [];
@@ -35,7 +36,7 @@ export class ModelBase {
             Object.assign(this,fields);
     }
 
-    static setupRelation(instance: any, relation: any) {
+    static setupRelation(instance: ModelBase, relation: IRelation) {
         const relationData = new RelationData(relation);
 
         Object.defineProperty(instance, relation.navigator, {
@@ -71,13 +72,7 @@ export class ModelBase {
         throw new Error("not implemented");
     }
 
-    /**
-     *
-     * @param {import("../../context").DataContext} dataContext
-     * @param {any} req
-     * @returns
-     */
-    static fetch(dataContext: any, req: any) {
+    static fetch(dataContext: DataContext, req: any) {
         const dataModel = this.getDataModel();
         return dataContext.fetchFromTable(dataModel, req, this);
     }
@@ -99,13 +94,21 @@ export class ModelBase {
         const dataModel = this.getDataModel();
         return dataContext.countFromTable(dataModel);
     }
+
+    public getFieldValue(fieldName : string) : any {
+        return (this as any)[fieldName];
+    }
+
+    public setFieldValue(fieldName : string, value : any) : void {
+        return (this as any)[fieldName] = value;
+    }
 }
 
 export class ModelMetaData {
-    fields : Array<any>;
+    fields : Array<IModelMetaField>;
     tableName : string;
-    relations : Array<any> | undefined;
-    constructor({fields, tableName, relations} : {fields: Array<any>, tableName: string, relations?: Array<any>}) {
+    relations : Array<IRelation> | undefined;
+    constructor({fields, tableName, relations} : {fields: IModelMetaField[], tableName: string, relations?: Array<any>}) {
         this.fields = fields;
         this.tableName = tableName;
         this.relations = relations;

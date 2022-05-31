@@ -70,27 +70,28 @@ export class DataContext extends DataContextBase {
     save(model : ModelBase, deep = false) {
         if (this.db == null)
             throw new Error("DB is not initialized");
-        const dataModel : ModelMetaData = (model.constructor as any)["getDataModel"]();
+
+        const dataModel = (model.constructor as typeof ModelBase).getDataModel();
 
         if (!model.isNew) {
             const fields = [];
 
-            const valueObj : any = {};
+            const valueObj : { [index : string ] : any } = {};
 
             for (const field of dataModel.fields) {
                 if (field.autoIncrement)
                     continue;
                 fields.push({name: field.name, placeholder: "@" + field.name});
-                valueObj["@" + field.name] = (model as any)[field.name];
+                valueObj["@" + field.name] = model.getFieldValue(field.name);
             }
 
-            const primaryKeys = dataModel.fields.filter((f: any) => f.primaryKey === true);
+            const primaryKeys = dataModel.fields.filter((f) => f.primaryKey === true);
 
             for (const primaryKey of primaryKeys) {
-                valueObj["@" + primaryKey.name] = (model as any)[primaryKey.name];
+                valueObj["@" + primaryKey.name] = model.getFieldValue(primaryKey.name);
             }
 
-            const fieldSpecsTxt = primaryKeys.map((x: any) => x.name + "=@" + x.name).join(" AND ");
+            const fieldSpecsTxt = primaryKeys.map((x) => x.name + "=@" + x.name).join(" AND ");
 
             const queryStr = `UPDATE ${dataModel.tableName} SET ${fields.map(f => f.name + " = " + f.placeholder).join(",")} WHERE (${fieldSpecsTxt})`;
 
@@ -99,24 +100,24 @@ export class DataContext extends DataContextBase {
             const fieldPlaceholders = [];
             const fieldNames = [];
 
-            const valueObj : any = {};
+            const valueObj : { [index : string ] : any } = {};
 
             for (const field of dataModel.fields) {
                 if (field.autoIncrement)
                     continue;
                 fieldPlaceholders.push("@" + field.name);
                 fieldNames.push(field.name);
-                valueObj["@" + field.name] = (model as any)[field.name];
+                valueObj["@" + field.name] = model.getFieldValue(field.name);
             }
 
             const queryStr = `INSERT INTO ${dataModel.tableName} (${fieldNames.join(",")}) VALUES (${fieldPlaceholders.join(",")}); SELECT last_insert_rowid();`;
 
             const result = this.db.exec(queryStr, valueObj);
 
-            const primaryKeyFields = dataModel.fields.filter((f : any) => f.primaryKey)
+            const primaryKeyFields = dataModel.fields.filter((f) => f.primaryKey)
             for (const field of primaryKeyFields) {
                 const fieldValue = result[0].values[0][primaryKeyFields.indexOf(field)];
-                (model as any)[field.name] = fieldValue;
+                model.setFieldValue(field.name, fieldValue);
             }
             model.isNew = false;
         }
@@ -142,7 +143,7 @@ export class DataContext extends DataContextBase {
         if (this.db == null)
             throw new Error("DB is not initialized");
         if (t instanceof ModelBase)
-            t = (t.constructor as any)["getDataModel"]() as ModelMetaData;
+            t = (t.constructor as typeof ModelBase).getDataModel();
 
         const returnValue = this.db.exec(`SELECT COUNT(*) FROM ${t.tableName}`);
         return JSON.stringify(returnValue[0].values[0][0]);
@@ -172,7 +173,7 @@ export class DataContext extends DataContextBase {
         return data;
     }
 
-    *fetchAll(dataModel : ModelMetaData, type : any) {
+    *fetchAll(dataModel : ModelMetaData, type : typeof ModelBase) {
         if (this.db == null)
             throw new Error("DB is not initialized");
         const sql = `SELECT 1 as _FOUND_,* FROM ${dataModel.tableName}`;
@@ -190,17 +191,14 @@ export class DataContext extends DataContextBase {
             model.isNew = false;
             yield model;
         }
-
-
-
     }
 
-    fetchFromTable(dataModel : ModelMetaData, req: any, type : any) {
+    fetchFromTable(dataModel : ModelMetaData, req: any, type : typeof ModelBase) {
         if (this.db == null)
             throw new Error("DB is not initialized");
-        const primaryKeys = dataModel.fields.filter((f: any) => f.primaryKey === true);
+        const primaryKeys = dataModel.fields.filter((f) => f.primaryKey === true);
 
-        const fieldSpecsTxt = primaryKeys.map((x: any) => x.name + "=:" + x.name).join(" AND ");
+        const fieldSpecsTxt = primaryKeys.map((x) => x.name + "=:" + x.name).join(" AND ");
 
         const sql = `SELECT 1 as _FOUND_,* FROM ${dataModel.tableName} WHERE ${fieldSpecsTxt}`;
 
@@ -218,7 +216,7 @@ export class DataContext extends DataContextBase {
             req[primaryKeys[0].name] = v;
         }
 
-        const parameters : any = {};
+        const parameters : { [index : string ] : any } = {};
         for (const primaryKey of primaryKeys) {
             if (primaryKey.name in req)
                 parameters[":" + primaryKey.name] = req[primaryKey.name];
@@ -257,10 +255,10 @@ export class DataContext extends DataContextBase {
         return new Promise((res,rej) => {
             const fileReader = new FileReader();
 
-            fileReader.addEventListener("load",function (ev) {
+            fileReader.addEventListener("load",function () {
                 res(this.result as string);
             });
-            fileReader.addEventListener("error",function (ev) {
+            fileReader.addEventListener("error",function () {
                 rej(this.error);
             });
             fileReader.readAsDataURL(blob);
