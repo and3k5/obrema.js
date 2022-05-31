@@ -1,6 +1,6 @@
 {
   "name": "obrema",
-  "version": "0.0.9-beta",
+  "version": "0.0.10-beta",
   "description": "ORM for JS",
   "main": "dist/index.js",
   "scripts": {
