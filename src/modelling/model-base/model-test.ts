@@ -127,7 +127,6 @@ describe("TestPhrase (model test)", function () {
         dataContext.createTable("Migrations", [
             new MigrationField({ primaryKey: true, nullable: false, name: "id", type: "text" })
         ], undefined);
-        
         dataContext.createTable("TestPhrase", [
             new MigrationField({ primaryKey: true, autoIncrement: true, nullable: false, name: "id", type: "int" }),
             new MigrationField({ nullable: true, name: "name", type: "text" })
