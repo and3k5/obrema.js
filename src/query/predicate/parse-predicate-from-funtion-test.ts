@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { parsePredicateFromFunction } from "./parse";
 
-describe.only("parsePredicateFromFunction", function () {
+describe("parsePredicateFromFunction", function () {
     [
         { caseName: "eq + and", func: (x: any) => x.mySpecialField == 2 && x.myOtherField == null, expectedQuery: "[mySpecialField] = @p0 AND [myOtherField] = @p1" },
         { caseName: "eq + or", func: (x: any) => x.mySpecialField == 2 || x.myOtherField == null, expectedQuery: "[mySpecialField] = @p0 OR [myOtherField] = @p1" },
