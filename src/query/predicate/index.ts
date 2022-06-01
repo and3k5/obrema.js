@@ -142,7 +142,6 @@ export function parsePredicateFromFunction(arg: Function, parameterProvider? : P
         parameterProvider = new ParameterProvider();
     const source = `(${arg.toString()})`;
     const script = esprima.parseScript(source);
-    console.log(JSON.stringify(script));
     if (script.type !== "Program")
         throw new Error("Unexpected script type: " + script.type);
     const body = script.body;
@@ -154,7 +153,6 @@ export function parsePredicateFromFunction(arg: Function, parameterProvider? : P
     const expression = statement.expression;
     if (expression.type !== "FunctionExpression")
         throw new Error("Unexpected expression type: " + expression.type);
-    const params = expression.params;
     if (expression.async)
         throw new Error("Cannot use async methods");
     if (expression.generator)

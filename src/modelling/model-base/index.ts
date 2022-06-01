@@ -1,4 +1,7 @@
-import { DataContext } from "../../communication/data-context";
+import { DataContext, ReqArgument } from "../../communication/data-context/sqlite";
+import { Migration } from "../../database/migration";
+import { MigrationField } from "../../database/migration/field";
+import { Relation } from "../../database/migration/relation";
 import { IRelation, RelationData } from "../relation";
 import { IModelMetaField } from "./field";
 
@@ -46,6 +49,8 @@ export class ModelBase {
                     value = relationData.fetcher({ instance, relation: relationData.relation });
                 }
                 if (value == null && relationData.returnsNew) {
+                    if(relationData.relation.fkModel == null)
+                        throw new Error("Not implemented");
                     value = relationData.setter({ instance, relation: relationData.relation, value: new relationData.relation.fkModel({}, instance.dataContext) });
                 }
                 if (value != null)
@@ -68,11 +73,36 @@ export class ModelBase {
         return relationData;
     }
 
+    static createMigration() : Migration {
+        const dataModel = this.getDataModel();
+        const fields = this.createMigrationFields(dataModel);
+        const relations = this.createMigrationRelations(dataModel);
+        return new Migration(this.name).createTable(dataModel.tableName, fields, relations);
+    }
+
+    static createMigrationFields(dataModel? : ModelMetaData) : MigrationField[] {
+        if (dataModel == null)
+            dataModel = this.getDataModel();
+        return dataModel.fields.map(x => new MigrationField({ type: x.type, name: x.name, autoIncrement: x.autoIncrement, nullable: !x.notNull, primaryKey: x.primaryKey }));
+    }
+
+    static createMigrationRelations(dataModel? : ModelMetaData) : Relation[] | undefined {
+        if (dataModel == null)
+            dataModel = this.getDataModel();
+        if (dataModel.relations == null)
+            return undefined;
+        return dataModel.relations.filter(x => x.pkModel === this).map(x => {
+            if (x.pkModel == undefined)
+                throw new Error("pkModel was not set");
+            return new Relation({ fkField: x.fkField, pkField: x.pkField, pkTable: x.pkModel.getDataModel().tableName });
+        });
+    }
+
     static getDataModel() : ModelMetaData {
         throw new Error("not implemented");
     }
 
-    static fetch(dataContext: DataContext, req: any) {
+    static fetch(dataContext: DataContext, req: ReqArgument) {
         const dataModel = this.getDataModel();
         return dataContext.fetchFromTable(dataModel, req, this);
     }
@@ -85,7 +115,7 @@ export class ModelBase {
         }
     }
 
-    static fetchAllRaw(dataContext: any) {
+    static fetchAllRaw(dataContext: DataContext) {
         const dataModel = this.getDataModel();
         return dataContext.fetchAllRaw(dataModel);
     }
@@ -95,11 +125,15 @@ export class ModelBase {
         return dataContext.countFromTable(dataModel);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public getFieldValue(fieldName : string) : any {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this as any)[fieldName];
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public setFieldValue(fieldName : string, value : any) : void {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this as any)[fieldName] = value;
     }
 }
@@ -108,7 +142,7 @@ export class ModelMetaData {
     fields : Array<IModelMetaField>;
     tableName : string;
     relations : Array<IRelation> | undefined;
-    constructor({fields, tableName, relations} : {fields: IModelMetaField[], tableName: string, relations?: Array<any>}) {
+    constructor({fields, tableName, relations} : {fields: IModelMetaField[], tableName: string, relations?: Array<IRelation>}) {
         this.fields = fields;
         this.tableName = tableName;
         this.relations = relations;

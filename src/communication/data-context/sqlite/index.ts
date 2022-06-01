@@ -3,12 +3,14 @@ import { Migration } from '../../../database/migration';
 import { MigrationField } from '../../../database/migration/field';
 import { ModelBase, ModelMetaData } from '../../../modelling/model-base';
 import { LanguageEngineBase } from '../../language-engine';
-import { DataContextBase } from '../data-context-base';
+import { DataContextBase, InitializationSettings, InputExistingData } from '../data-context-base';
 import { Relation } from "../../../database/migration/relation";
 
 import { load as loadWasmFunction } from "./loader";
+import { BindParams, QueryExecResult } from "sql.js";
+import { DataBaseCommunicator } from "../data-context-base/communicator";
 
-async function getSqlite() {
+async function getSqlite() : Promise<typeof import("sql.js")> {
     return await loadWasmFunction();
 }
 
@@ -20,29 +22,108 @@ class QueryError extends Error {
     }
 }
 
-export class DataContext extends DataContextBase {
+export class SqliteInsertOrUpdateCommand {
+    sql: string;
+    params: BindParams;
+    constructor(sql : string, params : BindParams) {
+        this.sql = sql;
+        this.params = params;
+    }
+}
+
+
+export class SqliteSelectCommand {
+    sql: string;
+    params: BindParams;
+    constructor(sql : string, params : BindParams) {
+        this.sql = sql;
+        this.params = params;
+    }
+}
+
+
+
+export type SqliteCommandQuery = string | SqliteInsertOrUpdateCommand | SqliteSelectCommand;
+
+export class SqliteDbCommunication extends DataBaseCommunicator<SqliteCommandQuery> {
+    private db : import("sql.js").Database;
+    constructor(db : import("sql.js").Database) {
+        super();
+        this.db = db;
+    }
+    public static async Create(data? : Uint8Array) {
+        const SQL = await getSqlite();
+        const db = data != null ? new SQL.Database(data) : new SQL.Database();
+        return new SqliteDbCommunication(db);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private stringifyType(o : any) {
+        if (o === null)
+            return "null";
+        if (o === undefined)
+            return "undefined";
+        if (typeof(o) != "object")
+            return typeof(o);
+        if (o.constructor != null)
+            return o.constructor.name as string;
+        return "?";
+    }
+
+    public executeCommand(command: SqliteCommandQuery): QueryExecResult[] {
+        if (command instanceof SqliteInsertOrUpdateCommand) {
+            return this.db.exec(command.sql, command.params)
+        }
+        if (command instanceof SqliteSelectCommand) {
+            return this.db.exec(command.sql, command.params)
+        }
+        if (typeof(command) === "string") {
+            return this.db.exec(command);
+        }
+        throw new Error("executeCommand: Method not implemented. command type: "+this.stringifyType(command));
+    }
+
+    public prepare(command: SqliteCommandQuery) {
+        if (command instanceof SqliteInsertOrUpdateCommand) {
+            return this.db.prepare(command.sql, command.params);
+        }
+        if (command instanceof SqliteSelectCommand) {
+            return this.db.prepare(command.sql, command.params)
+        }
+        if (typeof(command) === "string") {
+            return this.db.prepare(command);
+        }
+        throw new Error("prepare: Method not implemented. command type: "+this.stringifyType(command));
+    }
+
+    public getRawData() {
+        return this.db.export();
+    }
+}
+
+type ReqLiteral = string | number;
+export type ReqArgument = ReqLiteral | { [index : string] : ReqLiteral };
+
+export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCommandQuery> {
     //queryEngine: SqliteQueryEngine;
-    db?: import("sql.js").Database;
-    constructor(migrations : Array<Migration> | IterableIterator<Migration>, languageEngine : LanguageEngineBase) {
+    constructor(migrations : Array<Migration> | IterableIterator<Migration>, languageEngine : LanguageEngineBase<SqliteCommandQuery>) {
         super(new SqliteQueryEngine(), migrations, languageEngine);
     }
 
-    async loadNew({ disableMigrations = false } = {}) {
-        const SQL = await getSqlite();
-        this.db = new SQL.Database();
-        if (disableMigrations !== true)
+    async loadNew(options? : InitializationSettings) {
+        this.initializeDb(await SqliteDbCommunication.Create());
+        if (options != null && options.disableMigrations !== true)
             this.runMigrations();
     }
 
-    async loadExisting(data: Uint8Array | ArrayBuffer, { disableMigrations = false } = {}) {
+    async loadExisting(data: InputExistingData, options? : InitializationSettings) {
         if (data instanceof ArrayBuffer) {
             data = new Uint8Array(data);
         }
         if (!(data instanceof Uint8Array))
             throw new Error("data is not Uint8Array");
-        const SQL = await getSqlite();
-        this.db = new SQL.Database(data);
-        if (disableMigrations !== true)
+        this.initializeDb(await SqliteDbCommunication.Create(data));
+        if (options != null && options.disableMigrations !== true)
             this.runMigrations();
     }
 
@@ -55,12 +136,16 @@ export class DataContext extends DataContextBase {
     }
 
     runMigration(migration : Migration) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         migration.run(this);
         const sql = this.queryEngine.composeInsertInto({ tableName: "Migrations", values: [migration.id]});
         this.queryEngine.exec(this.db, sql);
     }
 
     hasMigration(migration : Migration) {
+        if (this.db == null)
+            throw new Error("DB is not initialized");
         const tblCheckQuery = this.queryEngine.composeSelect({ fields: ["name"], tableName: "sqlite_master", where: [{ field: "type", operator: "=", value: "table"}] });
         const tblCheck = this.queryEngine.exec(this.db, tblCheckQuery);
         if (tblCheck.length === 0)
@@ -80,11 +165,11 @@ export class DataContext extends DataContextBase {
         const dataModel = (model.constructor as typeof ModelBase).getDataModel();
 
         if (!model.isNew) {
-            const { sql : queryStr, params : valueObj } = this.languageEngine.WriteUpdateCommand(dataModel, model);
-            this.db.exec(queryStr, valueObj);
+            const command = this.languageEngine.WriteUpdateCommand(dataModel, model);
+            this.db.executeCommand(command);
         }else{
-            const { sql : queryStr, params : valueObj } = this.languageEngine.WriteInsertCommand(dataModel, model);
-            const result = this.db.exec(queryStr, valueObj);
+            const command = this.languageEngine.WriteInsertCommand(dataModel, model);
+            const result = this.db.executeCommand(command);
 
             const primaryKeyFields = dataModel.fields.filter((f) => f.primaryKey)
             for (const field of primaryKeyFields) {
@@ -109,8 +194,7 @@ export class DataContext extends DataContextBase {
 
         const sql = this.languageEngine.WriteCreateTable(tableName, fields, relations);
         try {
-            this.db.run(sql);
-
+            this.db.executeCommand(sql);
         }
         catch (e) {
             let message = "unknown error";
@@ -126,14 +210,14 @@ export class DataContext extends DataContextBase {
         if (t instanceof ModelBase)
             t = (t.constructor as typeof ModelBase).getDataModel();
 
-        const returnValue = this.db.exec(`SELECT COUNT(*) FROM ${t.tableName}`);
+        const returnValue = this.db.executeCommand(`SELECT COUNT(*) FROM ${t.tableName}`);
         return JSON.stringify(returnValue[0].values[0][0]);
     }
 
     fetchAllRaw(dataModel : ModelMetaData) {
         if (this.db == null)
             throw new Error("DB is not initialized");
-        const data = this.db.exec(`SELECT * FROM ${dataModel.tableName}`);
+        const data = this.db.executeCommand(`SELECT * FROM ${dataModel.tableName}`);
 
         return data;
     }
@@ -142,14 +226,14 @@ export class DataContext extends DataContextBase {
         if (this.db == null)
             throw new Error("DB is not initialized");
         const sql = `SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';`;
-        const data = this.db.exec(sql);
+        const data = this.db.executeCommand(sql);
         return data;
     }
 
     fetchAllRowsFromTableRaw(tableName : string) {
         if (this.db == null)
             throw new Error("DB is not initialized");
-        const data = this.db.exec(`SELECT * FROM ${tableName}`);
+        const data = this.db.executeCommand(`SELECT * FROM ${tableName}`);
 
         return data;
     }
@@ -174,7 +258,7 @@ export class DataContext extends DataContextBase {
         }
     }
 
-    fetchFromTable(dataModel : ModelMetaData, req: any, type : typeof ModelBase) {
+    fetchFromTable(dataModel : ModelMetaData, req: ReqArgument, type : typeof ModelBase) {
         if (this.db == null)
             throw new Error("DB is not initialized");
         const primaryKeys = dataModel.fields.filter((f) => f.primaryKey === true);
@@ -227,7 +311,7 @@ export class DataContext extends DataContextBase {
     getRawData() {
         if (this.db == null)
             throw new Error("DB is not initialized");
-        return this.db.export();
+        return this.db.getRawData();
     }
 
     async toDataURL() : Promise<string> {

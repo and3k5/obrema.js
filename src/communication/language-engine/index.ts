@@ -2,14 +2,15 @@ import { MigrationField as MigrationField } from "../../database/migration/field
 import { Relation } from "../../database/migration/relation";
 import { ModelBase, ModelMetaData } from "../../modelling/model-base";
 import { MetaFieldType } from "../../modelling/model-base/field";
+import { SqliteCommandQuery, SqliteInsertOrUpdateCommand } from "../data-context/sqlite";
 
-export abstract class LanguageEngineBase {
+export abstract class LanguageEngineBase<TQueryType> {
     abstract WriteCreateTable(tableName: string, fields: MigrationField[], relations: Relation[] | undefined) : string;
-    abstract WriteUpdateCommand(dataModel : ModelMetaData, model : ModelBase) : { sql : string, params : { [index : string ] : any } };
-    abstract WriteInsertCommand(dataModel : ModelMetaData, model : ModelBase) : { sql : string, params : { [index : string ] : any } };
+    abstract WriteUpdateCommand(dataModel : ModelMetaData, model : ModelBase) : TQueryType;
+    abstract WriteInsertCommand(dataModel : ModelMetaData, model : ModelBase) : TQueryType;
 }
 
-export class SqliteLanguageEngine extends LanguageEngineBase {
+export class SqliteLanguageEngine extends LanguageEngineBase<SqliteCommandQuery> {
     WriteCreateTable(tableName: string, fields: MigrationField[], relations: Relation[] | undefined): string {
         const fieldLines = fields.map(x => this.WriteMigrationField(x));
 
@@ -43,7 +44,7 @@ export class SqliteLanguageEngine extends LanguageEngineBase {
         }
     }
 
-    WriteUpdateCommand(dataModel: ModelMetaData, model: ModelBase): { sql: string; params: { [index: string]: any; }; } {
+    WriteUpdateCommand(dataModel: ModelMetaData, model: ModelBase): SqliteCommandQuery {
         const fields = [];
 
         const valueObj : { [index : string ] : any } = {};
@@ -65,10 +66,10 @@ export class SqliteLanguageEngine extends LanguageEngineBase {
 
         const queryStr = `UPDATE ${dataModel.tableName} SET ${fields.map(f => f.name + " = " + f.placeholder).join(",")} WHERE (${fieldSpecsTxt})`;
 
-        return { sql : queryStr, params : valueObj };
+        return new SqliteInsertOrUpdateCommand(queryStr, valueObj);
     }
 
-    WriteInsertCommand(dataModel : ModelMetaData, model : ModelBase) : { sql : string, params : { [index : string ] : any } } {
+    WriteInsertCommand(dataModel : ModelMetaData, model : ModelBase) : SqliteCommandQuery {
         const fieldPlaceholders = [];
         const fieldNames = [];
 
@@ -84,9 +85,10 @@ export class SqliteLanguageEngine extends LanguageEngineBase {
 
         const queryStr = `INSERT INTO ${dataModel.tableName} (${fieldNames.join(",")}) VALUES (${fieldPlaceholders.join(",")}); SELECT last_insert_rowid();`;
 
-        return { sql : queryStr, params : valueObj };
+        return new SqliteInsertOrUpdateCommand(queryStr, valueObj);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     FormatValue(value : any) {
         if (value === undefined)
             return null;

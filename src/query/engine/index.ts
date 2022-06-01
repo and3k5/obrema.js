@@ -1,20 +1,20 @@
-export abstract class QueryEngineBase {
-    public abstract composeInsertInto({ tableName, values } : { tableName : string, values: any[] }) : any;
-    public abstract composeSelect({ fields, tableName, where } : any) : any;
-    public abstract exec(db : any, queryData : any) : any;
+import { DataBaseCommunicator } from "../../communication/data-context/data-context-base/communicator";
+import { SqliteCommandQuery, SqliteDbCommunication, SqliteInsertOrUpdateCommand, SqliteSelectCommand } from "../../communication/data-context/sqlite";
+
+export abstract class QueryEngineBase<TCommand> {
+    public abstract composeInsertInto({ tableName, values } : { tableName : string, values: any[] }) : TCommand;
+    public abstract composeSelect({ fields, tableName, where } : any) : TCommand;
+    public abstract exec(db : DataBaseCommunicator<TCommand>, queryData : TCommand) : any;
 
     public abstract getAsObject(db : any, queryData : any, fieldValues : any) : any;
 }
 
-export class SqliteQueryEngine extends QueryEngineBase {
-    composeInsertInto({ tableName, values } : { tableName : string, values: any[] }) {
-        return {
-            commandText: `INSERT INTO ${tableName} VALUES (${values.map(x => "?").join(",")})`,
-            args: values,
-        }
+export class SqliteQueryEngine extends QueryEngineBase<SqliteCommandQuery> {
+    composeInsertInto({ tableName, values } : { tableName : string, values: any[] }) : SqliteCommandQuery {
+        return new SqliteInsertOrUpdateCommand(`INSERT INTO ${tableName} VALUES (${values.map(() => "?").join(",")})`,values);
     }
 
-    composeUpdate({ fields, tableName, where } : any) {
+    composeUpdate({ fields, tableName, where } : any) : SqliteCommandQuery {
         if (Array.isArray(fields))
             fields = fields.join(",");
 
@@ -25,14 +25,14 @@ export class SqliteQueryEngine extends QueryEngineBase {
             return x.field + " " + x.operator +" " + placeholder;
         }).join("AND");
 
-        return {
-            commandText: `UPDATE ${tableName} SET ${fields.map((f : any) => f.name + " = " + f.placeholder).join(",")} WHERE (${whereClause})`,
+        return new SqliteInsertOrUpdateCommand(
+            `UPDATE ${tableName} SET ${fields.map((f : any) => f.name + " = " + f.placeholder).join(",")} WHERE (${whereClause})`,
             // `SELECT ${fields} FROM ${tableName} WHERE ${whereClause}`,
-            args: where.filter((f : any) => "value" in f).map((f: any) => f.value),
-        };
+            where.filter((f : any) => "value" in f).map((f: any) => f.value)
+        );
     }
 
-    composeSelect({ fields, tableName, where } : any) {
+    composeSelect({ fields, tableName, where } : any) : SqliteCommandQuery {
         if (Array.isArray(fields))
             fields = fields.join(",");
 
@@ -43,14 +43,14 @@ export class SqliteQueryEngine extends QueryEngineBase {
             return x.field + " " + x.operator +" " + placeholder;
         }).join("AND");
 
-        return {
-            commandText: `SELECT ${fields} FROM ${tableName} WHERE ${whereClause}`,
-            args: where.filter((f: any) => "value" in f).map((f: any) => f.value),
-        };
+        return new SqliteSelectCommand(
+            `SELECT ${fields} FROM ${tableName} WHERE ${whereClause}`,
+            where.filter((f: any) => "value" in f).map((f: any) => f.value)
+        );
     }
 
-    exec(db : any, queryData : any) {
-        return db.exec(queryData.commandText, queryData.args);
+    exec(db : SqliteDbCommunication, queryData : SqliteCommandQuery) {
+        return db.executeCommand(queryData);
     }
 
     getAsObject(db : any, queryData : any, fieldValues : any) {

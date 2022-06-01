@@ -1,4 +1,4 @@
-import { DataContext } from "../../communication/data-context";
+import { DataContext } from "../../communication/data-context/sqlite";
 import { MigrationField } from "./field";
 import { Relation } from "./relation";
 

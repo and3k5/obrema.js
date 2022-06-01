@@ -1,11 +1,10 @@
 {
     "compilerOptions": {
-        "outDir": "./dist/",
+        "outDir": "dist",
         "noImplicitAny": true,
         "module": "ES2020",
         "target": "ES2020",
         "jsx": "react",
-        "allowJs": false,
         "checkJs": false,
         "moduleResolution": "node",
         "downlevelIteration": true,
@@ -23,7 +22,11 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "declaration": true,
-        "declarationDir": "dist",
+        "declarationDir": "dist"
     },
-    "exclude": ["./test-web-app"],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "test-web-app"
+    ]
 }

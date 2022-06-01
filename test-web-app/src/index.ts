@@ -42,7 +42,7 @@ export async function runTest() {
     try {
         if (ModelBase == null)
             throw new Error("Model base is null");
-        const dataContext = new DataContext([], new SqliteLanguageEngine());
+        const dataContext = new DataContext([TestPhrase.createMigration()], new SqliteLanguageEngine());
         await dataContext.loadNew();
         var testPhrase = new TestPhrase({}, dataContext);
         (testPhrase as any).name = "foobar";

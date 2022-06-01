@@ -4,7 +4,8 @@ export type RelationType = "one-to-one";
 
 export interface IRelation {
     fkField: string;
-    fkModel: typeof ModelBase;
+    fkModel?: typeof ModelBase;
+    pkModel?: typeof ModelBase;
     pkField: string;
     type: RelationType;
     navigator: string;
