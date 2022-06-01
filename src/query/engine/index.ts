@@ -5,8 +5,6 @@ export abstract class QueryEngineBase<TCommand> {
     public abstract composeInsertInto({ tableName, values } : { tableName : string, values: any[] }) : TCommand;
     public abstract composeSelect({ fields, tableName, where } : any) : TCommand;
     public abstract exec(db : DataBaseCommunicator<TCommand>, queryData : TCommand) : any;
-
-    public abstract getAsObject(db : any, queryData : any, fieldValues : any) : any;
 }
 
 export class SqliteQueryEngine extends QueryEngineBase<SqliteCommandQuery> {
@@ -51,11 +49,5 @@ export class SqliteQueryEngine extends QueryEngineBase<SqliteCommandQuery> {
 
     exec(db : SqliteDbCommunication, queryData : SqliteCommandQuery) {
         return db.executeCommand(queryData);
-    }
-
-    getAsObject(db : any, queryData : any, fieldValues : any) {
-        const stmt = db.prepare(queryData.commandText)
-        const result = stmt.getAsObject(fieldValues);
-        return result;
     }
 }

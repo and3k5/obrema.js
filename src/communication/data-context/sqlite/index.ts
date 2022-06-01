@@ -151,9 +151,11 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         if (tblCheck.length === 0)
             return false;
 
-        const stmt = this.queryEngine.composeSelect({ fields: "*", tableName: "Migrations", where: [{field:"id",operator: "=", placeholder: ":migrationId" }]});
+        const cmd = this.queryEngine.composeSelect({ fields: "*", tableName: "Migrations", where: [{field:"id",operator: "=", placeholder: ":migrationId" }]});
 
-        const result = this.queryEngine.getAsObject(this.db, stmt, { ':migrationId': migration.id });
+        const stmt = this.db.prepare(cmd);
+
+        const result = stmt.getAsObject({ ':migrationId': migration.id })
 
         return result != null && result.id != null;
     }
