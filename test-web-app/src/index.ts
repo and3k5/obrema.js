@@ -1,4 +1,4 @@
-import { ModelBase, ModelMetaData, DataContext, SqliteLanguageEngine } from "obrema";
+import { ModelBase, ModelMetaData, DataContext, SqliteLanguageEngine, MigrationField } from "obrema";
 
 class TestPhrase extends ModelBase {
     constructor(fields: any, dataContext : DataContext) {
@@ -44,6 +44,11 @@ export async function runTest() {
             throw new Error("Model base is null");
         const dataContext = new DataContext([TestPhrase.createMigration()], new SqliteLanguageEngine());
         await dataContext.loadNew();
+        dataContext.createTable("Migrations", [
+            new MigrationField({ primaryKey: true, nullable: false, name: "id", type: "text" })
+        ], undefined);
+        
+        dataContext.runMigrations();
         var testPhrase = new TestPhrase({}, dataContext);
         (testPhrase as any).name = "foobar";
         dataContext.save(testPhrase);
