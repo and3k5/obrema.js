@@ -7,10 +7,10 @@ import { DataContextBase, InitializationSettings, InputExistingData } from '../d
 import { Relation } from "../../../database/migration/relation";
 
 import { load as loadWasmFunction } from "./loader";
-import { BindParams, QueryExecResult } from "sql.js";
+import { BindParams, QueryExecResult } from "@and3k5/sql.js";
 import { DataBaseCommunicator } from "../data-context-base/communicator";
 
-async function getSqlite() : Promise<typeof import("sql.js")> {
+async function getSqlite() : Promise<typeof import("@and3k5/sql.js")> {
     return await loadWasmFunction();
 }
 
@@ -46,8 +46,8 @@ export class SqliteSelectCommand {
 export type SqliteCommandQuery = string | SqliteInsertOrUpdateCommand | SqliteSelectCommand;
 
 export class SqliteDbCommunication extends DataBaseCommunicator<SqliteCommandQuery> {
-    private db : import("sql.js").Database;
-    constructor(db : import("sql.js").Database) {
+    private db : import("@and3k5/sql.js").Database;
+    constructor(db : import("@and3k5/sql.js").Database) {
         super();
         this.db = db;
     }
