@@ -286,7 +286,7 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         const parameters : { [index : string ] : any } = {};
         for (const primaryKey of primaryKeys) {
             if (primaryKey.name in req)
-                parameters[":" + primaryKey.name] = req[primaryKey.name];
+                parameters[":" + primaryKey.name] = this.languageEngine.FormatValue(req[primaryKey.name]);
         }
 
         const result = stmt.getAsObject(parameters);

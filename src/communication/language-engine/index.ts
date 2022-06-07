@@ -8,6 +8,7 @@ export abstract class LanguageEngineBase<TQueryType> {
     abstract WriteCreateTable(tableName: string, fields: MigrationField[], relations: Relation[] | undefined) : string;
     abstract WriteUpdateCommand(dataModel : ModelMetaData, model : ModelBase) : TQueryType;
     abstract WriteInsertCommand(dataModel : ModelMetaData, model : ModelBase) : TQueryType;
+    abstract FormatValue(value : any) : any;
 }
 
 export class SqliteLanguageEngine extends LanguageEngineBase<SqliteCommandQuery> {
