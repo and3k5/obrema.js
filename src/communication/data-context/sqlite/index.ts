@@ -164,11 +164,16 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         if (this.db == null)
             throw new Error("DB is not initialized");
 
+        if (!model.isDirty) {
+            return;
+        }
+
         const dataModel = (model.constructor as typeof ModelBase).getDataModel();
 
         if (!model.isNew) {
             const command = this.languageEngine.WriteUpdateCommand(dataModel, model);
             this.db.executeCommand(command);
+            model.isDirty = false;
         }else{
             const command = this.languageEngine.WriteInsertCommand(dataModel, model);
             const result = this.db.executeCommand(command);
@@ -179,11 +184,14 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
                 model.setFieldValue(field.name, fieldValue);
             }
             model.isNew = false;
+            model.isDirty = false;
         }
 
         if (deep) {
             if (model.relations != null) {
                 for (const relation of model.relations) {
+                    if (relation.value == null)
+                        continue;
                     this.save(relation.value, true);
                 }
             }
@@ -206,14 +214,22 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         }
     }
 
-    countFromTable(t : ModelMetaData | ModelBase) {
+    countFromTable(t : ModelMetaData | ModelBase | typeof ModelBase) {
         if (this.db == null)
             throw new Error("DB is not initialized");
         if (t instanceof ModelBase)
             t = (t.constructor as typeof ModelBase).getDataModel();
+        if (!(t instanceof ModelMetaData)) {
+            t = t.getDataModel();
+        }
 
         const returnValue = this.db.executeCommand(`SELECT COUNT(*) FROM ${t.tableName}`);
-        return JSON.stringify(returnValue[0].values[0][0]);
+        let value = returnValue[0].values[0][0];
+        if (typeof(value) === "string")
+            value = parseInt(value);
+        if (typeof(value) != "number")
+            throw new Error("Expected a number");
+        return value;
     }
 
     fetchAllRaw(dataModel : ModelMetaData) {

@@ -7,11 +7,13 @@ import { IModelMetaField } from "./field";
 
 export class ModelBase {
     isNew: boolean;
+    isDirty: boolean;
     dataContext: DataContext;
     relations: Array<RelationData>;
 
     constructor(fields = {}, dataContext: DataContext) {
         this.isNew = true;
+        this.isDirty = false;
         if (dataContext == null)
             throw new Error("required: dataContext");
 
@@ -133,6 +135,7 @@ export class ModelBase {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public setFieldValue(fieldName : string, value : any) : void {
+        this.isDirty = true;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this as any)[fieldName] = value;
     }

@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { ModelBase, ModelMetaData } from ".";
 import { DataContext } from "../../communication/data-context/sqlite";
 import { SqliteLanguageEngine } from "../../communication/language-engine";
@@ -119,6 +120,8 @@ describe("TestPhrase (model test)", function () {
         var testPhrase = new TestPhrase({}, dataContext)
         testPhrase.setFieldValue("name","test hallo");
         dataContext.save(testPhrase);
+
+        expect(dataContext.countFromTable(TestPhrase)).to.equal(1);
     })
 
     it("can save a new model with undefined", async function () {
@@ -135,6 +138,8 @@ describe("TestPhrase (model test)", function () {
         var testPhrase = new TestPhrase({}, dataContext)
         testPhrase.setFieldValue("name",undefined);
         dataContext.save(testPhrase);
+
+        expect(dataContext.countFromTable(TestPhrase)).to.equal(1);
     })
 
     it("can save a new model with relation", async function () {
@@ -149,6 +154,11 @@ describe("TestPhrase (model test)", function () {
         
         var brand = new CarBrand({}, dataContext)
         brand.setFieldValue("name","test");
-        dataContext.save(brand);
+        var model = new CarModel({}, dataContext);
+        model.setFieldValue("name","wroomwroom");
+        (brand as any).model = model;
+        dataContext.save(brand, true);
+        expect(dataContext.countFromTable(CarBrand)).to.equal(1);
+        expect(dataContext.countFromTable(CarModel)).to.equal(1);
     })
 })
