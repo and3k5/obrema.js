@@ -276,9 +276,11 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         }
     }
 
-    fetchFromTable(dataModel : ModelMetaData, req: ReqArgument, type : typeof ModelBase) {
+    fetchFromTable(dataModel : ModelMetaData | typeof ModelBase, req: ReqArgument, type : typeof ModelBase) {
         if (this.db == null)
             throw new Error("DB is not initialized");
+        if (!(dataModel instanceof ModelMetaData))
+            dataModel = dataModel.getDataModel();
         const primaryKeys = dataModel.fields.filter((f) => f.primaryKey === true);
 
         const fieldSpecsTxt = primaryKeys.map((x) => x.name + "=:" + x.name).join(" AND ");

@@ -75,6 +75,21 @@ export class ModelBase {
         return relationData;
     }
 
+    getRelationMeta(relationName : string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (this as any)[relationName+"_meta"] as RelationData;
+    }
+
+    getSingleNavigator<T extends ModelBase>(relationName : string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (this as any)[relationName] as T | undefined;
+    }
+    
+    setSingleNavigator<T extends ModelBase>(relationName : string, value : T | undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this as any)[relationName] = value;
+    }
+
     static createMigration() : Migration {
         const dataModel = this.getDataModel();
         const fields = this.createMigrationFields(dataModel);

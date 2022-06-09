@@ -1,4 +1,4 @@
-export type MetaFieldType = "int" | "text" | "decimal";
+export type MetaFieldType = "int" | "text" | "decimal" | "date";
 
 export interface IModelMetaField {
     primaryKey?: boolean;
