@@ -42,6 +42,10 @@ export class SqliteLanguageEngine extends LanguageEngineBase<SqliteCommandQuery>
             return "TEXT";
         case "decimal":
             return "NUMERIC";
+        case "date":
+            return "DATE";
+        default:
+            throw new Error("Unsupported type: "+type);
         }
     }
 
