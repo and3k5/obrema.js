@@ -84,7 +84,7 @@ export class ModelBase {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this as any)[relationName] as T | undefined;
     }
-    
+
     setSingleNavigator<T extends ModelBase>(relationName : string, value : T | undefined) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (this as any)[relationName] = value;
@@ -126,7 +126,7 @@ export class ModelBase {
 
     static *fetchAll(dataContext: DataContext) {
         const dataModel = this.getDataModel();
-        const items : IterableIterator<any> = dataContext.fetchAll(dataModel, this);
+        const items : IterableIterator<ModelBase> = dataContext.fetchAll(dataModel, this);
         for (const item of Array.from(items)) {
             yield item;
         }

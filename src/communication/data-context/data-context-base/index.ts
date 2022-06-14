@@ -2,6 +2,7 @@ import { QueryEngineBase } from "../../../query/engine";
 import { Migration } from "../../../database/migration";
 import { LanguageEngineBase } from "../../language-engine";
 import { DataBaseCommunicator } from "./communicator";
+import { MigrationField } from "../../../database/migration/field";
 
 export type InitializationSettings = { disableMigrations?: boolean };
 export type InputExistingData = Uint8Array | ArrayBuffer;
@@ -21,5 +22,12 @@ export abstract class DataContextBase<TCommunicator extends DataBaseCommunicator
 
     protected initializeDb(db : TCommunicator) {
         this.db = db;
+    }
+
+    public static CreateBaseMigration(migrationName = "0000-00-00 Migration table") : Migration {
+        return new Migration(migrationName)
+            .createTable("Migrations", [
+                new MigrationField({ primaryKey: true, nullable: false, name: "id", type: "text" })
+            ]);
     }
 }

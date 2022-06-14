@@ -112,7 +112,7 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
 
     async loadNew(options? : InitializationSettings) {
         this.initializeDb(await SqliteDbCommunication.Create());
-        if (options != null && options.disableMigrations !== true)
+        if (options == null || options.disableMigrations !== true)
             this.runMigrations();
     }
 
@@ -123,7 +123,7 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         if (!(data instanceof Uint8Array))
             throw new Error("data is not Uint8Array");
         this.initializeDb(await SqliteDbCommunication.Create(data));
-        if (options != null && options.disableMigrations !== true)
+        if (options == null || options.disableMigrations !== true)
             this.runMigrations();
     }
 
@@ -301,6 +301,7 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
             req[primaryKeys[0].name] = v;
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const parameters : { [index : string ] : any } = {};
         for (const primaryKey of primaryKeys) {
             if (primaryKey.name in req)

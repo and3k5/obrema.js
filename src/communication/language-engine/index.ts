@@ -8,6 +8,7 @@ export abstract class LanguageEngineBase<TQueryType> {
     abstract WriteCreateTable(tableName: string, fields: MigrationField[], relations: Relation[] | undefined) : string;
     abstract WriteUpdateCommand(dataModel : ModelMetaData, model : ModelBase) : TQueryType;
     abstract WriteInsertCommand(dataModel : ModelMetaData, model : ModelBase) : TQueryType;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     abstract FormatValue(value : any) : any;
 }
 
@@ -52,6 +53,7 @@ export class SqliteLanguageEngine extends LanguageEngineBase<SqliteCommandQuery>
     WriteUpdateCommand(dataModel: ModelMetaData, model: ModelBase): SqliteCommandQuery {
         const fields = [];
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const valueObj : { [index : string ] : any } = {};
 
         for (const field of dataModel.fields) {
@@ -78,6 +80,7 @@ export class SqliteLanguageEngine extends LanguageEngineBase<SqliteCommandQuery>
         const fieldPlaceholders = [];
         const fieldNames = [];
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const valueObj : { [index : string ] : any } = {};
 
         for (const field of dataModel.fields) {
