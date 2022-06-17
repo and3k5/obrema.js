@@ -195,4 +195,39 @@ describe("TestPhrase (model test)", function () {
         expect(fetchedPerson?.getFieldValue("name")).to.equal(person.getFieldValue("name"));
         expect(fetchedPerson?.birthday?.getFieldValue("birthdate")).to.equal(person.birthday?.getFieldValue("birthdate"));
     })
+
+    it("saves relations and assign to the right FK value", async function () {
+        var dataContext = new DataContext([], new SqliteLanguageEngine());
+        await dataContext.loadNew();
+        dataContext.createTable("Migrations", [
+            new MigrationField({ primaryKey: true, nullable: false, name: "id", type: "text" })
+        ], undefined);
+
+        dataContext.runMigration(Person.createMigration());
+        dataContext.runMigration(Birthday.createMigration());
+        {
+            let personA = new Person({}, dataContext);
+            personA.setFieldValue("name", "test");
+            dataContext.save(personA);
+            expect(dataContext.countFromTable(Person)).to.equal(1);
+
+            expect(personA.getFieldValue("id")).to.equal(1);
+        }
+
+        {
+            let personB = new Person({}, dataContext);
+            personB.getRelationMeta("birthday").returnsNew = true;
+            personB.setFieldValue("name", "test");
+            var model = personB.birthday;
+            if (model == null)
+                throw new Error("birthday should have value");
+            model.setFieldValue("birthdate", "1994-01-01");
+            dataContext.save(personB, true);
+            expect(dataContext.countFromTable(Person)).to.equal(2);
+            expect(dataContext.countFromTable(Birthday)).to.equal(1);
+
+            expect(personB.getFieldValue("id")).to.equal(2);
+            expect(personB.birthday?.getFieldValue("personId")).to.equal(2);
+        }
+    })
 })

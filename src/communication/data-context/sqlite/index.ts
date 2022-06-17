@@ -170,6 +170,8 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
 
         const dataModel = (model.constructor as typeof ModelBase).getDataModel();
 
+        const wasNew = model.isNew;
+
         if (!model.isNew) {
             const command = this.languageEngine.WriteUpdateCommand(dataModel, model);
             this.db.executeCommand(command);
@@ -192,7 +194,12 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
                 for (const relation of model.relations) {
                     if (relation.value == null)
                         continue;
-                    this.save(relation.value, true);
+                    if (relation.relation.type === "one-to-one") {
+                        if (wasNew) {
+                            relation.value.setFieldValue(relation.relation.fkField, model.getFieldValue(relation.relation.pkField));
+                        }
+                        this.save(relation.value, true);
+                    }
                 }
             }
         }
