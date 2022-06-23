@@ -1,4 +1,4 @@
-import { DataContext, ReqArgument } from "../../communication/data-context/sqlite";
+import { DataContext, ReqArgument, ReqFieldsMap } from "../../communication/data-context/sqlite";
 import { Migration } from "../../database/migration";
 import { MigrationField } from "../../database/migration/field";
 import { Relation } from "../../database/migration/relation";
@@ -43,29 +43,16 @@ export class ModelBase {
 
     static setupRelation(instance: ModelBase, relation: IRelation) {
         const relationData = new RelationData(relation);
-
-        Object.defineProperty(instance, relation.navigator, {
-            get() {
-                let value = relationData.value;
-                if (!relationData.fetched) {
-                    value = relationData.fetcher({ instance, relation: relationData.relation });
+        if (!(relation.navigator in instance)) {
+            Object.defineProperty(instance, relation.navigator, {
+                get() {
+                    return instance.getRelationValue(relation.navigator);
+                },
+                set(value) {
+                    this.setRelationValue(relation.navigator, value);
                 }
-                if (value == null && relationData.returnsNew) {
-                    if(relationData.relation.fkModel == null)
-                        throw new Error("Not implemented");
-                    value = relationData.setter({ instance, relation: relationData.relation, value: new relationData.relation.fkModel({}, instance.dataContext) });
-                }
-                if (value != null)
-                    relationData.fetched = true;
-                relationData.value = value;
-                return value;
-            },
-            set(value) {
-                relationData.value = relationData.setter({ instance, relation: relationData.relation, value });
-                relationData.fetched = true;
-                return relationData.value;
-            }
-        });
+            });
+        }
 
         Object.defineProperty(instance, relation.navigator+"_meta", {
             value: relationData,
@@ -75,6 +62,32 @@ export class ModelBase {
         return relationData;
     }
 
+    private getRelationValue(navigatorName: string) {
+        const relationData = this.getRelationMeta(navigatorName);
+        let value = relationData.value;
+        if (!relationData.fetched) {
+            value = relationData.fetcher({ instance: this, relation: relationData.relation });
+        }
+
+        if (value == null && relationData.returnsNew) {
+            if(relationData.relation.fkModel == null)
+                throw new Error("Not implemented");
+            const subVal = new relationData.relation.fkModel({}, this.dataContext);
+            value = relationData.setter({ instance: this, relation: relationData.relation, value: subVal });
+        }
+        if (value != null)
+            relationData.fetched = true;
+        relationData.value = value;
+        return value;
+    }
+
+    private setRelationValue(navigatorName: string, value: any) {
+        const relationData = this.getRelationMeta(navigatorName);
+        relationData.value = relationData.setter({ instance: this, relation: relationData.relation, value });
+        relationData.fetched = true;
+        return relationData.value;
+    }
+
     getRelationMeta(relationName : string) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this as any)[relationName+"_meta"] as RelationData;
@@ -82,12 +95,26 @@ export class ModelBase {
 
     getSingleNavigator<T extends ModelBase>(relationName : string) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (this as any)[relationName] as T | undefined;
+        //return (this as any)[relationName] as T | undefined;
+        return this.getRelationValue(relationName) as T | undefined;
     }
 
     setSingleNavigator<T extends ModelBase>(relationName : string, value : T | undefined) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this as any)[relationName] = value;
+        // (this as any)[relationName] = value;
+        this.setRelationValue(relationName, value);
+    }
+
+    getMultiNavigator<T extends ModelBase>(relationName : string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        //return (this as any)[relationName] as T[] | undefined;
+        return this.getRelationValue(relationName) as T[] | undefined;
+    }
+
+    setMultiNavigator<T extends ModelBase>(relationName : string, value : T[] | undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        //(this as any)[relationName] = value;
+        this.setRelationValue(relationName, value);
     }
 
     static createMigration() : Migration {
@@ -124,9 +151,9 @@ export class ModelBase {
         return dataContext.fetchFromTable(dataModel, req, this);
     }
 
-    static *fetchAll(dataContext: DataContext) {
+    static *fetchAll(dataContext: DataContext, req?: ReqFieldsMap) {
         const dataModel = this.getDataModel();
-        const items : IterableIterator<ModelBase> = dataContext.fetchAll(dataModel, this);
+        const items : IterableIterator<ModelBase> = dataContext.fetchAll(dataModel, this, req);
         for (const item of Array.from(items)) {
             yield item;
         }
@@ -154,6 +181,41 @@ export class ModelBase {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this as any)[fieldName] = value;
     }
+
+    public static fetchRelations(creator : (info : RelationFetchInfo) => void) {
+        const info = new RelationFetchInfo(this);
+        creator(info);
+        return info;
+    }
+}
+
+export class RelationFetchInfo {
+    public modelType : typeof ModelBase;
+    public items : RelationFetchItem[] = [];
+    constructor(modelType : typeof ModelBase) {
+        this.modelType = modelType;
+    }
+    public add(navName : string) : RelationFetchItem {
+        const relation = this.modelType.getDataModel().relations?.find(x => x.navigator == navName);
+        if (relation == null) {
+            throw new Error(`Relation ${navName} not found`);
+        }
+        if (relation.fkModel == null) {
+            throw new Error(`Relation ${navName} has no fkModel`);
+        }
+        const item = new RelationFetchItem(relation.fkModel, relation);
+        this.items.push(item);
+        return item;
+    }
+}
+
+export class RelationFetchItem extends RelationFetchInfo {
+    public relation : IRelation;
+    constructor(modelType : typeof ModelBase, relation : IRelation) {
+        super(modelType);
+        this.relation = relation;
+    }
+
 }
 
 export class ModelMetaData {

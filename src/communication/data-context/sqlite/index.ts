@@ -1,7 +1,7 @@
 import { SqliteQueryEngine } from "../../../query/engine"
 import { Migration } from '../../../database/migration';
 import { MigrationField } from '../../../database/migration/field';
-import { ModelBase, ModelMetaData } from '../../../modelling/model-base';
+import { ModelBase, ModelMetaData, RelationFetchInfo } from '../../../modelling/model-base';
 import { LanguageEngineBase } from '../../language-engine';
 import { DataContextBase, InitializationSettings, InputExistingData } from '../data-context-base';
 import { Relation } from "../../../database/migration/relation";
@@ -102,7 +102,8 @@ export class SqliteDbCommunication extends DataBaseCommunicator<SqliteCommandQue
 }
 
 type ReqLiteral = string | number;
-export type ReqArgument = ReqLiteral | { [index : string] : ReqLiteral };
+export type ReqFieldsMap = { [index : string] : ReqLiteral };
+export type ReqArgument = ReqLiteral | ReqFieldsMap;
 
 export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCommandQuery> {
     //queryEngine: SqliteQueryEngine;
@@ -192,13 +193,30 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         if (deep) {
             if (model.relations != null) {
                 for (const relation of model.relations) {
-                    if (relation.value == null)
-                        continue;
-                    if (relation.relation.type === "one-to-one") {
+                    switch (relation.relation.type) {
+                    case "one-to-one": {
+                        if (relation.value == null)
+                            continue;
                         if (wasNew) {
                             relation.value.setFieldValue(relation.relation.fkField, model.getFieldValue(relation.relation.pkField));
                         }
                         this.save(relation.value, true);
+                        break;
+                    }
+                    case "one-to-many": {
+                        if (relation.value == null)
+                            continue;
+                        if (!Array.isArray(relation.value))
+                            throw new Error("relation value is not array");
+                        if (wasNew) {
+                            for (const item of relation.value) {
+                                item.setFieldValue(relation.relation.fkField, model.getFieldValue(relation.relation.pkField));
+                            }
+                        }
+                        for (const item of relation.value) {
+                            this.save(item, true);
+                        }
+                    }
                     }
                 }
             }
@@ -263,12 +281,32 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         return data;
     }
 
-    *fetchAll(dataModel : ModelMetaData, type : typeof ModelBase) {
+    *fetchAll(dataModel : ModelMetaData, type : typeof ModelBase, req?: ReqFieldsMap) {
         if (this.db == null)
             throw new Error("DB is not initialized");
-        const sql = `SELECT 1 as _FOUND_,* FROM ${dataModel.tableName}`;
+
+        let sql;
+
+        let params : BindParams | undefined = undefined;
+
+        if (req != null) {
+            const fields = dataModel.fields.filter((f) => (f.name in req));
+
+            const fieldSpecsTxt = req != null ? fields.map((x) => x.name + "=:" + x.name).join(" AND ") : null;
+
+            sql = `SELECT 1 as _FOUND_,* FROM ${dataModel.tableName} WHERE ${fieldSpecsTxt}`;
+
+            params = {};
+            for (const primaryKey of fields) {
+                if (primaryKey.name in req)
+                    params[":" + primaryKey.name] = this.languageEngine.FormatValue(req[primaryKey.name]);
+            }
+        }else{
+            sql = `SELECT 1 as _FOUND_,* FROM ${dataModel.tableName}`;
+        }
 
         const stmt = this.db.prepare(sql);
+        stmt.bind(params);
 
         while (stmt.step()) {
             const result = stmt.getAsObject();
@@ -283,7 +321,7 @@ export class DataContext extends DataContextBase<SqliteDbCommunication, SqliteCo
         }
     }
 
-    fetchFromTable(dataModel : ModelMetaData | typeof ModelBase, req: ReqArgument, type : typeof ModelBase) {
+    fetchFromTable(dataModel : ModelMetaData | typeof ModelBase, req: ReqArgument, type : typeof ModelBase, fetchPath? : RelationFetchInfo) {
         if (this.db == null)
             throw new Error("DB is not initialized");
         if (!(dataModel instanceof ModelMetaData))
