@@ -54,11 +54,6 @@ export class ModelBase {
             });
         }
 
-        Object.defineProperty(instance, relation.navigator+"_meta", {
-            value: relationData,
-            writable: false,
-        });
-
         return relationData;
     }
 
@@ -90,7 +85,10 @@ export class ModelBase {
 
     getRelationMeta(relationName : string) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (this as any)[relationName+"_meta"] as RelationData;
+        const relationData = this.relations.find(x => x.relation.navigator == relationName);
+        if (relationData == null)
+            throw new Error("Relation meta for "+relationName+" was not found");
+        return relationData;
     }
 
     getSingleNavigator<T extends ModelBase>(relationName : string) {

@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "npx webpack --mode=production && node run-test-app.js"
+    "test": "npx webpack --mode=development && node run-test-app.js"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",
@@ -25,6 +25,8 @@
     "webpack-manifest-plugin": "^4.0.2"
   },
   "dependencies": {
-    "obrema": "file:.."
+    "obrema": "file:..",
+    "vue": "^3.2.37",
+    "wait": "^0.4.2"
   }
 }

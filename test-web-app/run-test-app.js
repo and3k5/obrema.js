@@ -2,8 +2,18 @@ const { createServer } = require("http-server");
 const portfinder = require('portfinder');
 const puppeteer = require('puppeteer');
 
+const keepOpen = process.argv.indexOf("--keep-open") !== -1;
+
 async function wait(n) {
     return new Promise((res,rej) => setTimeout(() => res(),n));
+}
+
+async function waitForSigInt() {
+    return new Promise((res) => {
+        process.on('SIGINT', function() {
+            res();
+        });
+    });
 }
 
 (async () => {
@@ -43,6 +53,20 @@ async function wait(n) {
 
             console.log("Works!");
             //await page.screenshot({ path: 'example.png' });
+
+            if (keepOpen) {
+                console.log("Waiting for SIGINT");
+                await waitForSigInt();
+            }
+        }
+        catch (ex) {
+            if (keepOpen) {
+                console.error(ex);
+                console.log("Waiting for SIGINT");
+                await waitForSigInt();
+            }else{
+                throw ex;
+            }
         }
         finally {
             await browser.close();
